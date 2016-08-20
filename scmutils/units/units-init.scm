@@ -1,0 +1,10 @@
+(assign-operation '= same-units? units? units?)
+(assign-operation '< <-units?    units? units?)
+(assign-operation '<= <=-units?    units? units?)
+(assign-operation '> >-units?    units? units?)
+(assign-operation '>= >=-units?    units? units?)
+
+(assign-operation '* *units units? units?)
+(assign-operation 'invert invert-units units?)
+(assign-operation '/ /units units? units?)
+(assign-operation 'expt expt-units units? number?)

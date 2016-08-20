@@ -1,0 +1,168 @@
+# -*- mode: org -*-
+
+* Description
+
+  This is a port of the 'MIT Scmutils' library to Chez Scheme.  On top
+  of providing a set of of procedures for numerical computations, the
+  library provides a set of generic operators extending many
+  mathematical functions and operators to work with
+   - symbolic values,
+   - vectors, matrices and structures (to represent, e.g., tensors)
+   - physical quantities (values with units),
+   - ...
+  
+** Examples
+   
+   Load the libraries in the REPL (see below for further details):
+   #+BEGIN_SRC scheme
+     (import (scmutils base)
+             (scmutils generic)
+             (scmutils calculus))
+     (start-scmutils-print!)
+   #+END_SRC
+
+   You can compute the derivative of a scalar or vector valued
+   function evaluated at point 'x with:
+   #+BEGIN_SRC scheme
+     ((D (up cos sin)) 'x)
+   #+END_SRC
+   where 'up' denotes a contravariant vector which is represented by
+   a Scheme vector and 'D' is the generic derivative operator.
+
+   The operator 'D' is also used to compute the gradient of functions
+   of multiple arguments:
+   #+BEGIN_SRC scheme
+     (define (g x y)
+       (sin (* x y)))
+     ((D g) 'x0 'y0)
+   #+END_SRC
+   The result is a 'down' tuple' representing a covariant vector which
+   can be contracted with a contravariant vector to obtain the
+   approximate change in the function 'g':
+   #+BEGIN_SRC scheme
+     (* ((D g) 'x0 'y0)
+        (up 'dx 'dy))
+   #+END_SRC
+
+   You can work with 'structures' (see refman) and with matrices:
+   #+BEGIN_SRC scheme
+     (let ((M (matrix-by-rows (list 'a 0) (list 0 'b))))
+       (determinant M))
+   #+END_SRC
+   
+   For numerical computations the library includes procedures to solve
+   differential equations, doing numerical integration, root finding
+   and single- and multi-variable minimization among other things:
+   #+BEGIN_SRC scheme
+     (minimize (square cos) 0 :pi)
+   #+END_SRC
+
+   You can work with units as well:
+   #+BEGIN_SRC scheme
+     (/ (& 30 &centi &meter) :c)
+   #+END_SRC
+   with ':c' the speed of light in m/s (one of several built-in
+   constants).
+
+* Build
+
+  To build the libraries run "make".  By default it looks for a Chez
+  Scheme binary called "chez-scheme".  If the name of your binary is
+  different, you can specify it as follows (for all targets):
+
+  make CHEZ=my-chez-scheme-bin
+
+* Install
+
+  By default "make install" will install the libraries under the
+  prefix "/usr/local".  You can specify a different installation
+  prefix directory as follows:
+
+  make install PREFIX=/my-prefix/path
+
+  This will install all compiled libraries (*.so files) to
+  $PREFIX/lib/csvX.Y-site, where X.Y is Chez's version.  If in
+  addition you want to install the source files, use the 'install-src'
+  target.  They are installed in the same directory as the .so files.
+
+* Use
+
+  The library consists of the following sub-libraries:
+
+   - (scmutils base): defines the fundamental part of the library.
+     Currently we export most defined functions, even many internal
+     ones.  In the future we may clean up the list of exported
+     symbols.
+
+   - (scmutils generic): exports the generic operators such as '+',
+     '*', ... with names equal to standard Scheme procedures.
+
+   - (scmutils mechanics): exports the functions described in the book
+     'Structure and Interpretation of Classical Mechanics' by
+     G. J. Sussman and J. Wisdom.  
+
+     Note that, because Chez Scheme doesn't provide a built-in
+     graphics library, the plotting functions described in the book
+     are not available.  As an alternative, interfacing with 'Gnuplot'
+     from Chez Scheme is pretty straight-forward.
+
+   - (scmutils calculus): exports the functions described in the book
+     'Functional Differential Geometry' by G. J. Sussman and
+     J. Wisdom.  
+
+     Note that the (scmutils mechanics) library defines a version of
+     'Lie-derivative' which is less general than the one defined in
+     (scmutils calculus).  Be sure to use the latter for calculus
+     purposes.
+
+  If you want to load everything you can just import all of above
+  libraries in the indicated order, making sure to import
+  'Lie-derivative' from (scmutils calculus) and not from (scmutils
+  mechanis).
+
+  Scmutils includes a custom REPL to drop internal tag information.
+  To start it execute (start-scmutils-print!), to stop it use
+  (stop-scmutils-print!).  The custom REPL automatically simplify
+  expression results before printing them.
+
+  Once the custom REPL is active and if you have LaTeX installed, the
+  result of the last expression can be nicely displayed with the full
+  mathematical formatting capability of LaTeX with the command '(de)'.
+
+  The original MIT/GNU Scheme Scmutils includes several global
+  variables, usually identified by names starting and ending with
+  '*'.  Because the R6RS Scheme standard doesn't allow libraries to
+  export mutable variables, we changed most of them to 'parameters'.
+
+* Limitations
+
+  MIT/GNU Scheme has a very powerful condition system, including the
+  'restart' feature found in Common-Lisp.  This allows one to extend
+  Scheme without having to implement a new interpreter.  This feature
+  is used in Scmutils to allows, e.g., a vector of functions in
+  operator position.
+
+  The condition system of R6RS Scheme is more limited and doesn't
+  provide 'restarts'.  As a consequence, sometimes one has to
+  explicitly use the generic version of 'apply', called 'g:apply',
+  instead of the Scheme native one.  As an example, the following
+  code produces an error of type "attempt to apply non-procedure":
+
+  #+BEGIN_SRC scheme
+    (((d (literal-manifold-function 'f-rect R2-rect))
+      (coordinate-system->vector-basis R2-rect))
+     ((point R2-rect) (up 'x0 'y0)))  
+  #+END_SRC
+
+  To fix the problem one has to explicitly use 'g:apply' as shown
+  below: 
+
+  #+BEGIN_SRC scheme
+    (g:apply 
+      ((d (literal-manifold-function 'f-rect R2-rect))
+       (coordinate-system->vector-basis R2-rect))
+      (list ((point R2-rect) (up 'x0 'y0))))  
+  #+END_SRC
+
+  This should only be necessary in code that you type at the REPL or
+  in user defined functions.
