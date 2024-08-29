@@ -30,7 +30,7 @@ MANDIR = ${DATAROOTDIR}/man
 INFODIR = ${DATAROOTDIR}/info
 DOCDIR = ${DATAROOTDIR}/doc/${PACKAGE}-${VERSION}
 
-chezversion ::= $(shell echo '(call-with-values scheme-version-number (lambda (a b c) (format \#t "~d.~d" a b)))' | ${CHEZ} -q)
+chezversion ::= $(shell echo '(call-with-values scheme-version-number (lambda (a b c) (format #t "~d.~d" a b)))' | ${CHEZ} -q)
 schemedir = ${LIBDIR}/csv${chezversion}-site
 
 build:
